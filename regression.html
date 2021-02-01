@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+          integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+            integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+            crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+            integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+            crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+            integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+            crossorigin="anonymous"></script>
+    <script src="assets/js/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.24.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@0.1.1"></script>
+    <script src="assets/js/utilis.js"></script>
+    <title>regression</title>
+</head>
+<body>
+<div class="row">
+    <div class="col-md-12">
+        <div class="card card-box">
+            <div class="card-head">
+                <header>regression</header>
+            </div>
+            <div class="card-body " id="bar-parent">
+                <div class="row">
+                    <div class="col-md-4">
+                        <label class="pull-right">y</label>
+                        <input type="text" class="form-control  " id="yBorder">
+                    </div>
+                </div>
+                <br>
+                <div class="row">
+                    <div class="col-md-4">
+                        <label class="pull-right">x</label>
+                        <input type="text" id="xBorder" class="form-control">
+                    </div>
+                </div>
+                <br>
+
+                <button class="btn btn-primary" id="addData">add record</button>
+                <button class="btn btn-danger" id="removeData">remove record</button>
+                <button class="btn btn-info" id="regression">calculate regression</button>
+                <hr>
+                <div>
+                    <canvas id="canvas"></canvas>
+                </div>
+                <br>
+                <br>
+
+                <script>
+
+
+
+                    function newDate(days) {
+                        return moment().add(days, 'd').toDate();
+                    }
+
+                    function newDateString(days) {
+                        return moment().add(days, 'd').format();
+                    }
+
+                    let data1 = []
+                    var color = Chart.helpers.color;
+                    var config = {
+                        type: 'line',
+                        data: {
+                            datasets: [{
+                                label: 'regression',
+                                backgroundColor: color(window.chartColors.red).alpha(0.5).rgbString(),
+                                borderColor: window.chartColors.red,
+                                fill: false,
+                                data: [],
+                            }, {
+                                label: 'current records',
+                                backgroundColor: color(window.chartColors.blue).alpha(0.5).rgbString(),
+                                borderColor: window.chartColors.blue,
+                                fill: false,
+                                data: []
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            title: {
+                                display: true,
+                                text: 'regression'
+                            },
+                            scales: {
+                                xAxes: [{
+                                    type: 'linear',
+                                    display: true,
+                                    scaleLabel: {
+                                        display: true,
+                                        labelString: 'number'
+                                    },
+                                    ticks: {
+                                        major: {
+                                            fontStyle: 'bold',
+                                            fontColor: '#FF0000'
+                                        }
+                                    }
+                                }],
+                                yAxes: [{
+                                    display: true,
+                                    scaleLabel: {
+                                        display: true,
+                                        labelString: 'value'
+                                    }
+                                }]
+                            }
+                        }
+                    };
+
+                    window.onload = function () {
+                        var ctx = document.getElementById('canvas').getContext('2d');
+                        window.myLine = new Chart(ctx, config);
+                    };
+
+
+                    document.getElementById('addData').addEventListener('click', function () {
+
+                        let x = $("#xBorder").val()
+                        let y = $("#yBorder").val()
+                        if (config.data.datasets.length > 0) {
+                            config.data.datasets[1].data.push({
+                                x: x,
+                                y: y
+                            });
+                            window.myLine.update();
+                        }
+                    });
+
+                    document.getElementById('removeData').addEventListener('click', function () {
+                        config.data.datasets.forEach(function (dataset) {
+                            dataset.data.pop();
+                        });
+                        window.myLine.update();
+                    });
+
+                    document.getElementById('regression').addEventListener('click', function () {
+                        borderAverage()
+                    });
+
+                    // calculate average for x border and y border and pass them to another function  to  calculate zikma
+                    function borderAverage() {
+                        let data = config.data.datasets[1].data
+                        let y = 0;
+                        let x = 0;
+                        let n = 0;
+                        for (const element of data) {
+                            y += element.y
+                            x += element.x
+                            ++n
+                        }
+                        let avg_y = y / n
+                        let avg_x = x / n
+
+                        return zikmaCalculate(avg_y, avg_x, data)
+                    }
+
+
+                    // calculate zikma and pass result  to create regression border
+                    function zikmaCalculate(avg_y, avg_x, data) {
+                        let up = 0;
+                        let down = 0;
+                        for (const element of data) {
+                            up += (element.x - avg_x) * (element.y - avg_y)
+                            down += Math.pow((element.x - avg_x), 2)
+                        }
+                        let Slope = up / down
+                        return makeRegression(Slope, avg_x, avg_y, data)
+                    }
+
+
+                    function makeRegression(Slope, avg_x, avg_y, data) {
+                        let WidthOfOrigin = avg_y - (Slope * avg_x)
+                        for (const element of data) {
+                            if (config.data.datasets.length > 0) {
+                                config.data.datasets[0].data.push({
+                                    x: element.x,
+                                    y: WidthOfOrigin + (Slope * element.x)
+                                });
+                                window.myLine.update();
+                            }
+                        }
+                    }
+
+
+                </script>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Optional JavaScript -->
+
+</body>
+</html>
